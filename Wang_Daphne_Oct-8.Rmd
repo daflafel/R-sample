@@ -1,0 +1,100 @@
+---
+title: "Short Assignment 4 (due Tuesday, Week 6, at noon)"
+author: 'Daphne Wang (Aditya Maheshwari)'
+date: "04/10/2019"
+output: html_document
+---
+
+In this assignment, you will begin exploring data on voting in the United National General Assembly. We will continue working on this example in the next lecture. 
+
+Like legislators in the US Congress, the member states of the United Nations (UN) are politically divided on many issues such as trade, nuclear disarmament, and human rights. During the Cold War, countries in the UN General Assembly tended to split into two factions: one led by the capitalist United States and the other by the communist Soviet Union.  In this exercise, we will analyze how states' ideological positions, as captured by their votes on UN resolutions, have changed since the fall of communism.
+
+This exercise is based on Michael A. Bailey, Anton Strezhnev, and Erik Voeten. "Estimating Dynamic State Preferences from United Nations Voting Data." *Journal of Conflict Resolution*, August 2015.
+
+The data is called `unvoting.csv` and the variables are:
+
+--------------------------------------------------------------------------------
+ Name                 Description
+ -------------------- ----------------------------------------------------------
+ `CountryName`        The name of the country
+ 
+ `idealpoint`         Its estimated ideal point
+ 
+ `Year`               The year for which the ideal point is estimated
+ 
+ `PctAgreeUS`         The percentage of votes that agree with the US on the same issue
+ 
+ `PctAgreeRUSSIA`     The percentage of votes that agree with Russia/the Soviet Union on the same issue
+--------------------------------------------------------------------------------
+
+In the analysis that follows, we measure state preferences in two ways. (Note that the data for 1964 are missing due to the absence of roll call data.) First, we can use the percentage of votes by each country that coincide with votes on the same issue cast by the two major Cold War powers: the United States and the Soviet Union. For example, if a country voted for ten resolutions in 1992, and if its vote matched the United States's vote on exactly six of these resolutions, the variable `PctAgreeUS` in 1992 would equal 60 for this country. 
+
+Second, we can also measure state preferences in terms of numerical ideal points. These ideal points capture what international relations scholars have called countries' *liberalism* on issues such as political freedom, democratization, and financial liberalization. The two measures are highly correlated, with larger (more liberal) ideal points corresponding to a higher percentage of votes that agree with the US.
+
+## Question 1
+
+We begin by examining how the distribution of state ideal points has changed after the end of communism. Plot the distribution of ideal points separately for 1980 and 2000 - about ten years before and after the fall of the Berlin Wall, respectively. Add the median to each plot as a vertical line. (Make sure that all your figures have all the necessary elements, such as axis labels and titles.) 
+How do the two distributions differ? 
+Pay attention to the degree of polarization and give a brief substantive interpretation of the results. 
+In addition, use the `quantile()` function (with the default arguments) to quantify the patterns you identified (for both years), and then 
+visualize the differences with a Q-Q plot (including a 45-degree line). 
+Again, briefly interpret the results.
+
+## Answer 1
+
+```{r}
+unvoting <- read.csv("~/Downloads/unvoting.csv")
+# distribution of ideal points in 1980
+hist(unvoting$idealpoint[unvoting$Year==1980], breaks = seq(from = -3, to = 3, by = 0.5), freq = FALSE, ylim = c(0, 0.8), xlab = "Ideal Point", main = "Ideal Point in 1980")
+abline(v=median(unvoting$idealpoint[unvoting$Year==1980]))
+# distribution of ideal points in 2000
+hist(unvoting$idealpoint[unvoting$Year==2000], breaks = seq(from = -3, to = 3, by = 0.5), freq = FALSE, ylim = c(0, 0.8), xlab = "Ideal Point", main = "Ideal Point in 2000")
+abline(v=median(unvoting$idealpoint[unvoting$Year==2000]))
+```
+The distribution is 1980 is more normal. However, the distribution in 2000 is more skewed towards the left. The polarization in 2000 is also more polarized because it seems to have two peaks of high density of points both below and above 0. In comparison, 1980 seems less polarized because it has a single peak of high density around 0.
+
+```{r}
+#1980 ideal points quantiles
+quantile(unvoting$idealpoint[unvoting$Year==1980])
+#2000 ideal points quantiles
+quantile(unvoting$idealpoint[unvoting$Year==2000])
+#Q-Q plot ideal points in 1980 vs 2000
+qqplot(unvoting$idealpoint[unvoting$Year==1980], unvoting$idealpoint[unvoting$Year==2000], ylim = c(-3, 3), xlim = c(-3, 3), xlab = "1980 ideal point", ylab = "2000 ideal point", main = "ideal point in 1980 vs 2000")
+abline(0, 1)
+```
+The shape of the Q-Q plot is a sigmoid curve. This shows that there is a high concentration of the points in 2000 are concentrated around -1 and 1 which indicates that the distribution in 1980 in the lower and upper quartile is more dispersed than that of 2000. 
+However, there is a high concentration of points around 0 in 1980. This indicates that the distribution in 2000 around the median is more dispersed than that of 1980. 
+Since it does not have points in the 45 degrees line, Both observations support the observation that there is more polarization in 2000 than in 1980.
+
+## Question 2
+
+Next, examine how the number of countries voting with the US has changed over time. Plot the average percent agreement with the US across all counties over time. Also, add the average percent agreement with Russia as another line for comparison (using the `lines()` function).  Does the US appear to be getting more or less isolated over time, as compared to Russia? 
+What are some countries that are consistently pro-US?  What are the most pro-Russian countries? (Consider the top 5 each. The `sort()` function may be useful.) Give a brief substantive interpretation of the results.
+
+## Answer 2
+
+```{r}
+# average percent agreement with the US across all countries over time
+unvoting$Year<-as.factor(unvoting$Year)
+meanPctAgreeUS<-tapply(unvoting$PctAgreeUS, unvoting$Year, mean, na.rm=TRUE)
+plot(names(meanPctAgreeUS), meanPctAgreeUS*100, pch = 16, col = "blue", xlab= "Year", ylab="Average Percent", ylim = c(10, 90),
+main = "Average Percent Agreement with US")
+# average percent agreement with the Russia across all countries over time
+lines(names(meanPctAgreeUS), tapply(unvoting$PctAgreeRUSSIA, unvoting$Year, mean, na.rm=TRUE)*100, pch = 16, col = "red")
+text(2005, 35, "US\n Agreement")
+text(2005, 80, "Russia\n Agreement")
+```
+The US appears to be getting more isolated over time, as compared to Russia since its average percent agreement across all countries has consistently dropped from 1946 to 1990. Since then, it has fluctuated. However, the average percent of agreement with Russia has increased unsteadily from 1946 through 1990 and surpassed the US Agreement in the mid 1960s.
+```{r}
+unvoting$CountryName<-as.factor(unvoting$CountryName)
+#top 5 pro-USA states (excluding USA)
+meanCountryPctAgreeUS<-tapply(unvoting$PctAgreeUS, unvoting$CountryName, mean, na.rm=TRUE)
+head(sort(meanCountryPctAgreeUS, decreasing=TRUE),6)
+```
+
+```{r}
+#top 5 pro-Russian states (excluding Russia)
+meanCountryPctAgreeRUSSIA<-tapply(unvoting$PctAgreeRUSSIA, unvoting$CountryName, mean, na.rm=TRUE)
+head(sort(meanCountryPctAgreeRUSSIA, decreasing=TRUE),6)
+```
+The observations of the top five supporters for the US and Russia helps clarify why Russia may have such a higher average percent agreement than the  US. The top 5 Russian supporters have a much higher average percent agreement over time than the top 5 American supporting countries. This might show that while there are a few countries that staunchly support Russia almost all the time, there is more variance among countries supporting the US.

@@ -1,0 +1,149 @@
+---
+title: "Short Assignment 5 (due Tuesday, Week 7, at 6pm)"
+author: 'Daphne Wang (Aditya Maheshwari)'
+date: "11/10/2019"
+output: html_document
+---
+
+In this assignment, we will apply what we learnt in lecture to polling on the Trump-Clinton election in 2016, in order to practice plotting, loops and conditional statements. 
+
+As noted in lecture, the U.S. president is elected by the electoral college -- 538 electors corresponding to 435 members of congress, 100 senators, and 3 additional electors allocated to Washington D.C.. The number of electoral votes allocated to each state is equal to the size of its congressional delegation. And most states cast all their electoral votes for the candidate receiving a plurality of the state's votes in the general election (the *winner-takes-all* rule). Nebraska and Maine are the only two exceptions. These states allocate two electoral votes to the candidate receiving a plurality of the state's votes, and each of their remaining electoral votes go to the candidate receiving a plurality of votes within each of the states' congressional districts. But these are small and relatively homogeneous states. Maine has never actually split its electoral votes and Nebraska did it only once, casting a vote for Obama in 2008.
+
+A candidate must receive a simple majority of electoral college votes (270 votes) to be elected. But, as in 2000, it is possible for a candidate to win the election without receiving a plurality of the popular vote. In this assignment. we will analyze state-level polls downloaded from the Huffington Post's Pollster (http://elections.huffingtonpost.com/pollster/polls) and 3 additional polls for Washington D.C. available at (http://www.electoral-vote.com/evp2016/Pres/pres_polls.txt) to predict the outcomes of the 2016 presidential election. We will predict the distribution of electoral college votes according to the *winner-takes-all* rule and using only the 3 most recent polls in each state and examine how this distribution changed over time, starting at 90 days before the election.
+
+The dataset (`polls2016.csv`) has 905 observations, each representing a different poll, and includes the following 7 variables:
+
+-----------------------------------------------------------------------------
+Name                Description
+---------------     ---------------------------------------------------------
+`id`                Poll ID
+
+`state`             U.S. state where poll was fielded
+
+`Clinton`           The poll's estimated level of support for Hillary Clinton   
+                    (in percentage points) 
+
+`Trump`             The poll's estimated level of support for Donald Trump (in 
+                    percentage points)
+
+`days_to_election`  Number of days before November 4, 2016. 
+
+`electoral_votes`   Number of electoral votes allocated to the state where the poll was 
+                    fielded (a state-level variable)
+                    
+`population`        The poll's target population, which may be `Adults`, `Registered Voters`, 
+                    or `Likely Voters` 
+--------------------------------------------------------------------------------
+
+## Question 1
+
+We will begin by restricting our poll data to the 3 most recent polls in each state and computing the average support for each candidate by state. Create a scatterplot showing support for Clinton vs. support for Trump. Use state abbreviations to plot the results. Briefly interpret the results.
+
+```{r}
+polls2016 <- read.csv("~/Dropbox/cars1/INAF5016/Short assignment due week 7-20191011/polls2016.csv")
+state_names <- unique(polls2016$state)
+
+# create an empty container vector for Trump support
+trump_state_polls <- rep(NA, length(state_names))
+names(trump_state_polls) <- state_names
+
+# create an empty container vector for Clinton support
+clinton_state_polls <- rep(NA, length(state_names))
+names(clinton_state_polls) <- state_names
+
+# loop for calculating Trump support in each state based on latest 3 polls
+for (trump_support in state_names) {
+  trump <- subset(polls2016, state == trump_support)
+  t.latest<-sort(trump$days_to_election, index.return=TRUE)
+  t.subset<-trump[head(t.latest$ix,3),]
+  trump_state_polls[trump_support] <- mean(t.subset$Trump)
+}
+trump_state_polls
+
+# loop for calculating Clinton support in each state based on latest 3 polls
+for (clinton_support in state_names) {
+  clinton<- subset(polls2016, state == clinton_support)
+  c.latest<-sort(clinton$days_to_election, index.return=TRUE)
+  c.subset<-clinton[head(c.latest$ix,3),]
+  clinton_state_polls [clinton_support] <- mean(c.subset$Clinton)
+}
+clinton_state_polls 
+
+# plot Clinton vs Trump support 
+plot(clinton_state_polls,trump_state_polls, type = "n", main = "Clinton vs Trump Support",xlab= "Clinton Support in % points", ylab="Trump Support in % points", xlim = c(20, 80), ylim = c(10, 70))
+text(x=clinton_state_polls, y=trump_state_polls, labels=unique(polls2016$state))
+```
+
+**Hint:** To do this see the code in Section 4.1.3 of QSS. The main difference is that you will have to sort the polls by the `days_to_election` variable within each state.  Use the `sort()` function to sort the polls from the latest to the oldest.  When the `index.return` argument is set to `TRUE`, this function will return the ordering index vector, which can be used to extract the 3 most recent polls for each state. Also note that we do not need to calculate the predicted margin between the candidates, because the question asks to plot the average support for each.
+
+## Question 2
+
+Based on the average support you calculated for Clinton and Trump, predict the winner of each state and allocate the corresponding electoral college votes to the predicted winner. While two states, Maine and Nebraska, do not apply the *winner-takes-all* rule to allocate their electoral votes, for the sake of simplicity, we will apply this rule uniformly across these states as well. If the support for the two candidates in a given state is identical, split the state's electoral votes. Who would you have predicted to win the election based on these polls? How many electoral college votes would you have predicted each candidate to receive? While it is possible to answer this question without, use a loop and conditional statements (`if ... else if ... else`) for the sake of practice. 
+```{r}
+# create an empty container for number of electoral votes per state
+e.votes <- rep(NA, length(state_names))
+names(e.votes) <- state_names
+
+# loop for calculating number of electoral votes per state
+for (st.e.votes in state_names) {
+  votes <- subset(polls2016, state == st.e.votes)
+  e.votes[st.e.votes] <- unique(votes$electoral_votes)
+}
+e.votes
+```
+
+```{r}
+# create dataset with Trump support, Clinton support, and electoral votes 
+who_wins_pt1<- data.frame(state_names, clinton_state_polls, trump_state_polls, e.votes)
+```
+
+```{r}
+# create an empty container vector for Trump electoral college votes per state
+who_wins_trump <- rep(NA, length(state_names))
+names(who_wins_trump) <- state_names
+
+# loop and conditional statements to see how many electoral college votes Trump gets per state
+for (who_wins_trump.i in state_names) {
+  lets_see_trump<- subset(who_wins_pt1, state_names == who_wins_trump.i)
+
+if (lets_see_trump$trump_state_polls> lets_see_trump$clinton_state_polls) {
+who_wins_trump[who_wins_trump.i] <- lets_see_trump$e.votes
+} else if (lets_see_trump$trump_state_polls< lets_see_trump$clinton_state_polls) {
+who_wins_trump[who_wins_trump.i] <- 0
+} else {
+who_wins_trump[who_wins_trump.i] <- lets_see_trump$e.votes/2  
+}
+}  
+#summary of votes Trump gets per state
+who_wins_trump 
+# sum of votes Trump is predicted to receive
+sum(who_wins_trump)
+```
+
+```{r}
+# create an empty container vector for Clinton electoral college votes per state
+who_wins_clinton <- rep(NA, length(state_names))
+names(who_wins_clinton) <- state_names
+
+# loop and conditional statements to see how many electoral college votes Clinton gets per state
+for (who_wins_clinton.i in state_names) {
+  lets_see_clinton<- subset(who_wins_pt1, state_names == who_wins_clinton.i)
+
+if (lets_see_clinton$trump_state_polls< lets_see_clinton$clinton_state_polls) {
+who_wins_clinton[who_wins_clinton.i] <- lets_see_clinton$e.votes
+} else if (lets_see_clinton$trump_state_polls> lets_see_clinton$clinton_state_polls) {
+who_wins_clinton[who_wins_clinton.i] <- 0
+} else {
+who_wins_clinton[who_wins_clinton.i] <- lets_see_clinton$e.votes/2  
+}
+}  
+#summary of votes Clinton gets per state
+who_wins_clinton
+# sum of votes Clinton is predicted to receive
+sum(who_wins_clinton)
+```
+## Question 3 (OPTIONAL: if you want more practice)
+
+Finally, we examine how poll predictions changed over several weeks of polling. Starting at 60 days before the election, and for each day, repeat the same analysis as the one conducted for Question 1. That is, for each day, we take the 3 latest polls (or fewer if only one or two is available) for each state and compute the average support separately for Clinton and Trump within each state. We then allocate the electoral votes of that state based on its predicted winner. Use a time series plot to present the predicted total number of electoral votes for each candidate. Add the winning line, i.e., an absolute majority of 270 votes, as a horizontal line. Briefly describe the results.
+
+**Hint:** You may want to create a nested loop, in which an outer loop is for each day, starting 60 days before the election and stopping on the day of the most recent poll, and an inner loop is used to calculate support for each candidate by state using the 3 most recent polls on any given day.
