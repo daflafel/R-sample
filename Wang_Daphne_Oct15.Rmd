@@ -142,8 +142,3 @@ who_wins_clinton
 # sum of votes Clinton is predicted to receive
 sum(who_wins_clinton)
 ```
-## Question 3 (OPTIONAL: if you want more practice)
-
-Finally, we examine how poll predictions changed over several weeks of polling. Starting at 60 days before the election, and for each day, repeat the same analysis as the one conducted for Question 1. That is, for each day, we take the 3 latest polls (or fewer if only one or two is available) for each state and compute the average support separately for Clinton and Trump within each state. We then allocate the electoral votes of that state based on its predicted winner. Use a time series plot to present the predicted total number of electoral votes for each candidate. Add the winning line, i.e., an absolute majority of 270 votes, as a horizontal line. Briefly describe the results.
-
-**Hint:** You may want to create a nested loop, in which an outer loop is for each day, starting 60 days before the election and stopping on the day of the most recent poll, and an inner loop is used to calculate support for each candidate by state using the 3 most recent polls on any given day.
